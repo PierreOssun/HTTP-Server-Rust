@@ -6,17 +6,17 @@ use std::error::Error;
 use std::fmt::{Display, Formatter, Result as FmtResult, Debug};
 
 
-pub struct Request {
-    path: String,
-    query_string: Option<String>,
+pub struct Request<'buf> {
+    path: &'buf str,
+    query_string: Option<&'buf str>,
     method: Method
 }
 
-impl TryFrom<&[u8]> for Request {
+impl<'buf> TryFrom<&'buf [u8]> for Request<'buf> {
     type Error = ParseError;
     
     // GET /search?name=abc&sort=1 HTTP/1.1
-    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+    fn try_from(buf: &'buf [u8]) -> Result<Request<'buf>, Self::Error> {
         let request = str::from_utf8(buf)?;
 
         let (method, request) = get_next_word(request).ok_or(ParseError::InvalidRequest)?;
@@ -36,7 +36,11 @@ impl TryFrom<&[u8]> for Request {
             path = &path[..i];
         }
 
-        unimplemented!()
+        Ok(Self {
+            path,
+            query_string,
+            method
+        })
     }
 }
 
